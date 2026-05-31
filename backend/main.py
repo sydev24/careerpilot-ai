@@ -2,6 +2,9 @@ import json
 import re
 import os
 import io
+import threading
+import time
+import urllib.request
 from typing import List, Dict, Any
 from fastapi import FastAPI, UploadFile, File, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
@@ -19,6 +22,22 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Self-ping to prevent Render hibernation
+def ping_server():
+    while True:
+        try:
+            url = "https://careerpilot-ai-vmrg.onrender.com/"
+            urllib.request.urlopen(url)
+            print(f"Self-pinged {url} successfully.")
+        except Exception as e:
+            print(f"Self-ping failed: {e}")
+        time.sleep(14 * 60) # 14 minutes
+
+@app.on_event("startup")
+def start_ping():
+    thread = threading.Thread(target=ping_server, daemon=True)
+    thread.start()
 
 # Paths
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
